@@ -34,7 +34,7 @@
 
 也可以离线用：
 
-1. 从 [Releases](../../releases) 下载 `num-station.html`（或直接下载仓库中的 `数驿.html`）；
+1. 从 [Releases](../../releases) 下载资产 `num-station-v3.0.0.html`（版本号随最新 Release 递增；或直接下载仓库中的 `数驿.html`）；
 2. 双击用浏览器打开——Edge／Chrome／Firefox 均可；
 3. 输入即换算，全程本地计算，无安装、无联网、无依赖。
 
