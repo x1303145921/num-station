@@ -1,5 +1,7 @@
 # 数驿 · Num Station
 
+![Release](https://img.shields.io/github/v/release/x1303145921/num-station) ![License](https://img.shields.io/github/license/x1303145921/num-station)
+
 > 进制转换与数字小工坊——单文件、零依赖、离线即用的本地网页工具。
 > A single-file, dependency-free, offline web tool for number-base conversion and learning.
 
@@ -24,7 +26,13 @@
 
 **体验向**：深色／浅色／跟随系统三态主题、键盘流（数字键 1-6 切面板、Enter 提交）、读屏实时播报（aria-live）、WCAG AA 对比度、打印样式、尊重 prefers-reduced-motion。
 
+![深色主题](docs/shot-dark.png)
+
 ## 快速开始
+
+**在线使用（无需下载）**：直接打开 [GitHub Pages 版](https://x1303145921.github.io/num-station/)——错题本与主题偏好仍只存你本机。
+
+也可以离线用：
 
 1. 从 [Releases](../../releases) 下载 `num-station.html`（或直接下载仓库中的 `数驿.html`）；
 2. 双击用浏览器打开——Edge／Chrome／Firefox 均可；
@@ -45,6 +53,10 @@ node 真机自测.js    # 98 项 headless Edge 真机断言（需 Windows + Edge
 - 全程本地计算，页面 CSP 锁为 `default-src 'none'`，不发任何网络请求；
 - 错题本与主题偏好仅存浏览器 localStorage，不上传、不同步；
 - 无第三方代码、无构建步骤、无遥测。
+
+## 参与贡献
+
+欢迎 issue 与 PR——流程与三通道自测指引见 [CONTRIBUTING.md](CONTRIBUTING.md)，三十轮版本沿革精编见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## License
 
