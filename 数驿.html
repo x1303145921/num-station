@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%AA%B6%3C/text%3E%3C/svg%3E">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<script>
+(function () {
+  var t = null;
+  try { t = localStorage.getItem('shuyi-theme'); } catch (e) { t = null; }
+  if (!t) t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  document.documentElement.dataset.theme = t;
+})();
+</script>
+<title>数驿 · 进制转换与数字小工坊</title>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f6f3ec; --card:#fffdf7; --resbg:#ffffff; --ink:#2c2a25; --muted:#6b655a;
+  --line:#e5dfcf; --accent:#276b69; --accent-soft:#e6f0ef;
+  --warn:#b4552d; --mono:ui-monospace,"Cascadia Mono",Consolas,"Courier New",monospace;
+}
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#191713; --card:#211e19; --resbg:#1d1a15; --ink:#e9e3d5; --muted:#a59d8f;
+  --line:#3a3429; --accent:#55b0ac; --accent-soft:#223230;
+  --warn:#d98a5f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+  font-size:15px;line-height:1.65}
+.wrap{max-width:1020px;margin:0 auto;padding:24px 20px 48px}
+.toprow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+header h1{margin:0;font-size:26px;letter-spacing:2px}
+header .sub{margin:4px 0 16px;color:var(--muted);font-size:13px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;position:sticky;top:0;
+  background:var(--bg);padding:8px 0 10px;z-index:20;border-bottom:1px solid var(--line)}
+nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);
+  padding:7px 16px;border-radius:999px;cursor:pointer;font-size:14px}
+nav button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.pill{border:1px solid var(--line);background:var(--resbg);color:var(--ink);
+  border-radius:999px;padding:3px 14px;cursor:pointer;font-size:13px}
+.pill.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.pill.act{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.pill.act:disabled{opacity:.4;cursor:not-allowed;background:var(--resbg);border-color:var(--line);color:var(--muted)}
+section{display:none}
+section.on{display:block;animation:shuyi-fade .18s ease}
+@keyframes shuyi-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes pulse-ok{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+@keyframes shake-no{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.res.verdict-ok{animation:pulse-ok .3s ease}
+.res.verdict-no{animation:shake-no .3s ease}
+::selection{background:var(--accent);color:#fff}
+input::placeholder{color:var(--muted);opacity:.75}
+.pill,.res .foot button,nav button{transition:background .12s ease,color .12s ease,border-color .12s ease}
+#c_in{font-size:17px;padding:9px 12px}
+#q1_q .v,#q2_q .v{font-size:17px}
+/* 主题深浅切换渐变（reduced-motion 时由下方 blanket 全关） */
+body,.card,.res,input,select,textarea,.steps,.pill,nav button{transition:background-color .2s ease,color .2s ease,border-color .2s ease}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important;transition:none !important}
+}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:16px 18px;margin-bottom:16px;transition:box-shadow .15s ease,border-color .15s ease}
+.card:hover{box-shadow:0 2px 10px rgba(0,0,0,.06)}
+html[data-theme="dark"] .card:hover{box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.card h2{margin:0 0 12px;font-size:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.row label{color:var(--muted);font-size:13px;white-space:nowrap}
+input[type=text],input[type=number],select{
+  border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:14px;
+  background:var(--resbg);color:var(--ink);font-family:var(--mono)}
+input[type=text]{min-width:240px;max-width:100%}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent)}
+.err{color:var(--warn);font-size:13px;min-height:1em;margin:4px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px}
+.res{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--resbg)}
+.res .k{color:var(--muted);font-size:12px}
+.res .meta{margin-left:6px;color:var(--muted);font-size:11px;opacity:.85}
+.res .v{font-family:var(--mono);font-size:15px;word-break:break-all;min-height:1.4em;margin-top:4px;user-select:all}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.res .foot{display:flex;gap:6px;margin-top:7px}
+.res .foot button{border:1px solid var(--line);background:none;color:var(--muted);
+  border-radius:6px;padding:2px 9px;font-size:11px;cursor:pointer}
+.res .foot button:hover{color:var(--accent);border-color:var(--accent)}
+.b1{color:var(--accent);font-weight:700}
+.os{background:#c65f57;color:#fff;border-radius:3px;padding:1px 2px}
+.oe{background:#c98a2e;color:#fff;border-radius:3px;padding:1px 2px}
+.om{background:#3d8f8c;color:#fff;border-radius:3px;padding:1px 2px}
+.steps{border-left:3px solid var(--accent);background:var(--accent-soft);
+  border-radius:0 10px 10px 0;padding:10px 14px;margin-top:12px}
+.steps h3{margin:0 0 6px;font-size:13px;color:var(--accent)}
+.steps p{margin:2px 0;font-family:var(--mono);font-size:13px;word-break:break-all;user-select:all}
+.steps .note{color:var(--muted);font-size:12px}
+.steps .many{columns:2;column-gap:26px}
+.steps .many p{break-inside:avoid}
+details.cheat{padding-top:12px;padding-bottom:12px}
+details.cheat summary{cursor:pointer;color:var(--accent);font-size:14px;user-select:none}
+details.cheat .cols{columns:2;column-gap:26px;margin-top:10px}
+details.cheat .cols table{break-inside:avoid;margin-bottom:10px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+tbody tr:hover td{background:var(--accent-soft)}
+tbody tr:nth-child(even) td{background:rgba(0,0,0,.025)}
+html[data-theme="dark"] tbody tr:nth-child(even) td{background:rgba(255,255,255,.03)}
+th{color:var(--muted);font-weight:normal;font-size:12px}
+td.mono{font-family:var(--mono);word-break:break-all}
+input,select,textarea{caret-color:var(--accent)}
+.hint{color:var(--muted);font-size:12px;margin-top:8px}
+footer{color:var(--muted);font-size:12px;text-align:center;margin-top:28px}
+@media (max-width:640px){
+  .wrap{padding:16px 12px}
+  input[type=text]{min-width:150px}
+  .row{gap:8px}
+  th,td{padding:5px 6px}
+  details.cheat .cols{columns:1}
+}
+@media print{
+  nav,#theme_btn,.pill,.res .foot button,#c_copyall{display:none !important}
+  body{background:#fff;color:#000}
+  .card,.res{break-inside:avoid;background:#fff;border-color:#bbb}
+  .steps{background:#fff;border-color:#999}
+  .b1{color:#000 !important}
+  .os,.oe,.om{background:transparent !important;color:#000 !important;border:1px solid #999}
+  details.cheat{display:none}
+}
+</style>
+</head>
+<body>
+<noscript><div style="max-width:720px;margin:16px auto;padding:12px 16px;border:1px solid #b4552d;border-radius:10px;color:#b4552d">数驿的换算全部依赖本地 JavaScript——当前浏览器禁用了 JS，请启用后刷新本页。</div></noscript>
+<div class="wrap">
+<!-- ===== 头部与导航 ===== -->
+<header>
+  <div class="toprow">
+    <h1>🪶 数驿</h1>
+    <button id="theme_btn" class="pill">🌙 深色</button>
+  </div>
+  <div class="sub">进制转换与数字小工坊 · 输入即换算 · 全程本地 · 青鸾造 · v3.0</div>
+  <nav>
+    <button data-p="conv" class="on" title="快捷键 1">换数 · 进制转换</button>
+    <button data-p="bits" title="快捷键 2">位算 · 位运算</button>
+    <button data-p="comp" title="快捷键 3">三码 · 原码反码补码</button>
+    <button data-p="float" title="快捷键 4">浮点 · IEEE 754</button>
+    <button data-p="char" title="快捷键 5">字符 · 编码</button>
+    <button data-p="net" title="快捷键 6">网络 · IP 与子网</button>
+  </nav>
+</header>
+
+<!-- ===== 面板：换数 ===== -->
+<section id="p-conv" class="on">
+  <div class="card">
+    <h2>🧮 任意进制互转（2 ~ 36）</h2>
+    <div class="row">
+      <label>数值</label><input type="text" id="c_in" value="156" spellcheck="false">
+      <label>源进制</label><select id="c_src"></select>
+      <button class="pill qb" data-b="2" title="快捷切到 2 进制">2</button>
+      <button class="pill qb on" data-b="10" title="快捷切到 10 进制">10</button>
+      <button class="pill qb" data-b="8" title="快捷切到 8 进制">8</button>
+      <button class="pill qb" data-b="16" title="快捷切到 16 进制">16</button>
+      <label>小数位数</label><input type="number" id="c_prec" value="10" min="1" max="32">
+      <label><input type="checkbox" id="c_steps" checked> 显示换算步骤</label>
+    </div>
+    <div class="err" id="c_err"></div>
+    <div class="grid" id="c_out"></div>
+    <div class="row" style="margin-top:10px">
+      <label>目标进制</label><select id="c_tgt"></select>
+      <div id="c_custom" style="flex:1;min-width:220px"></div>
+      <button id="c_copyall" class="pill act" style="flex-shrink:0" title="复制常用四进制与目标进制结果">复制全部结果</button>
+    </div>
+    <div class="hint">支持负号、小数点与 0x／0b／0o 前缀；数字用 0-9 与 A-Z（不分大小写）；带空格／下划线／逗号分隔的分组写法直接粘进来也认；循环小数以 (循环节) 记法显示，循环节更长时在卡片上注明；卡片上「设为输入」可把结果接回去继续换算。</div>
+  </div>
+  <details class="card cheat">
+    <summary>📖 小抄：2 的幂 · 0~15 三制对照</summary>
+    <div id="c_cheat"></div>
+  </details>
+  <div class="card">
+    <h2>📐 换算步骤（教学）</h2>
+    <div id="c_stepbox"></div>
+  </div>
+  <div class="card">
+    <h2>🎲 转制练习 · 出题官</h2>
+    <div class="row">
+      <label>难度</label>
+      <select id="q2_level"><option value="easy">简单（≤99）</option><option value="mid">中等（≤9999）</option><option value="hard">困难（≤1048575）</option></select>
+      <label>题型</label><select id="q2_kind"><option value="int">仅整数</option><option value="neg">整数＋负数</option><option value="frac" selected>整数＋负数＋小数</option></select>
+      <button id="q2_new" class="pill act">🎲 出一题</button>
+      <button id="q2_check" class="pill act">对答案</button>
+      <button id="q2_reveal" class="pill act">看解析</button>
+      <span class="hint" id="q2_streak" style="margin:0"></span>
+    </div>
+    <div class="res" id="q2_q" style="margin-bottom:10px"><div class="k">题目</div><div class="v">（点「🎲 出一题」开始）</div></div>
+    <div class="row">
+      <label>你的答案</label><input type="text" id="q2_ans" spellcheck="false" style="min-width:260px">
+    </div>
+    <div class="err" id="q2_err"></div>
+    <div id="q2_out" aria-live="polite"></div>
+    <details class="cheat" style="margin-top:8px">
+      <summary>📕 错题本（本机记录，最多存 50 道）</summary>
+      <div id="q2_wrong"></div>
+    </details>
+    <div class="hint">大小写不限，可带千位分隔；答错会给出正确值——先自己算，再看解析。</div>
+  </div>
+</section>
+
+<!-- ===== 面板：位算 ===== -->
+<section id="p-bits">
+  <div class="card">
+    <h2>⚙️ 位运算演示</h2>
+    <div class="row">
+      <label>输入进制</label><select id="b_base"><option value="2">2</option><option value="8">8</option><option value="10" selected>10</option><option value="16">16</option></select>
+      <label>A</label><input type="text" id="b_a" value="60" spellcheck="false">
+      <label>B</label><input type="text" id="b_b" value="13" spellcheck="false">
+      <label>位宽</label><select id="b_w"><option>8</option><option selected>16</option><option>32</option><option>64</option></select>
+      <label>移位 k</label><input type="number" id="b_k" value="2" min="0" max="64">
+    </div>
+    <div class="err" id="b_err"></div>
+    <div class="hint" id="b_note" style="margin-top:0"></div>
+    <div id="b_out"></div>
+    <div class="hint">无符号整数运算；右移有两条：逻辑右移高位补 0，算术右移按补码解释、高位补符号位（对比着看负数最清楚）；NOT 在所选位宽内取反；「1」位以青色标出，最右列「1 的个数」即 popcount／汉明重量——奇偶校验看它。经典例子：60 AND 13 = 12，60 OR 13 = 61，60 XOR 13 = 49。</div>
+  </div>
+</section>
+
+<!-- ===== 面板：三码 ===== -->
+<section id="p-comp">
+  <div class="card">
+    <h2>🧱 十进制 → 原码 / 反码 / 补码</h2>
+    <div class="row">
+      <label>位宽</label><select id="t_w"><option>8</option><option selected>16</option><option>32</option><option>64</option></select>
+      <label>十进制整数</label><input type="text" id="t_in" value="-12" spellcheck="false">
+    </div>
+    <div class="err" id="t_err"></div>
+    <div class="grid" id="t_out"></div>
+    <div class="hint" id="t_hint"></div>
+    <div id="t_steps"></div>
+  </div>
+  <div class="card">
+    <h2>🔢 比特位 → 有符号值（补码解读）</h2>
+    <div class="row">
+      <label>比特位</label><input type="text" id="t2_in" value="11110100" spellcheck="false">
+      <label>形式</label><select id="t2_form"><option value="2">二进制</option><option value="16">十六进制</option></select>
+      <label>位宽</label><select id="t2_w"><option>8</option><option selected>16</option><option>32</option><option>64</option></select>
+    </div>
+    <div class="err" id="t2_err"></div>
+    <div class="grid" id="t2_out"></div>
+    <div class="hint">不足位宽按高位补 0；最高位为 1 时按负数（补码）解读。</div>
+  </div>
+</section>
+
+<!-- ===== 面板：浮点 ===== -->
+<section id="p-float">
+  <div class="card">
+    <h2>🔬 IEEE 754 浮点数拆解</h2>
+    <div class="row">
+      <label>十进制数</label><input type="text" id="f_in" value="0.1" spellcheck="false">
+      <button class="pill fex" data-v="0.1">0.1</button>
+      <button class="pill fex" data-v="1.5">1.5</button>
+      <button class="pill fex" data-v="-0">−0</button>
+      <button class="pill fex" data-v="1e309">溢出→∞</button>
+      <button class="pill fex" data-v="1e-320">次正规</button>
+    </div>
+    <div class="err" id="f_err"></div>
+    <div class="card" style="background:var(--resbg)">
+      <h2>单精度 float32（1 + 8 + 23，偏移 127）</h2>
+      <div id="f32out"></div>
+    </div>
+    <div class="card" style="background:var(--resbg)">
+      <h2>双精度 float64（1 + 11 + 52，偏移 1023）</h2>
+      <div id="f64out"></div>
+    </div>
+    <div class="hint">试试 0.1：十进制写不尽的数，二进制里同样写不尽——这正是浮点误差的来源。</div>
+  </div>
+  <div class="card">
+    <h2>🔍 比特位 → 浮点数（反查）</h2>
+    <div class="row">
+      <label>十六进制比特</label><input type="text" id="f2_in" value="3FC00000" spellcheck="false" style="min-width:340px">
+    </div>
+    <div class="err" id="f2_err"></div>
+    <div id="f2_out"></div>
+    <div class="hint">8 位十六进制按单精度读，16 位按双精度读；试试 3FC00000 → 1.5。</div>
+  </div>
+</section>
+
+<!-- ===== 面板：字符 ===== -->
+<section id="p-char">
+  <div class="card">
+    <h2>🔤 字符 → 码点 / UTF-8</h2>
+    <div class="row"><label>文本</label><input type="text" id="s_in" value="Aa中🪶" spellcheck="false" style="min-width:340px"></div>
+    <div class="err" id="s_err"></div>
+    <div id="s_out"></div>
+  </div>
+  <div class="card">
+    <h2>📥 字节 → 字符</h2>
+    <div class="row">
+      <label>编码</label><select id="s2_enc"><option value="utf-8" selected>UTF-8</option><option value="gbk">GBK</option></select>
+      <label>字节（十六进制）</label><input type="text" id="s2_in" value="E4 B8 AD" spellcheck="false" style="min-width:340px">
+    </div>
+    <div class="err" id="s2_err"></div>
+    <div class="res" id="s2_out" style="max-width:420px"></div>
+    <div class="hint" id="s2_hint">浏览器只能「解」GBK 不能「编」GBK——要存 GBK 文件仍需编辑器转码（Dev-C++ 老工程注意编码）。</div>
+  </div>
+</section>
+
+<!-- ===== 面板：网络 ===== -->
+<section id="p-net">
+  <div class="card">
+    <h2>🌐 IPv4 与子网拆解</h2>
+    <div class="row">
+      <label>IP 地址</label><input type="text" id="n_ip" value="192.168.1.100" spellcheck="false">
+      <label>掩码（/24 或 255.255.255.0）</label><input type="text" id="n_mask" value="/24" spellcheck="false" style="min-width:180px">
+    </div>
+    <div class="row">
+      <label>反推：要放多少台主机？</label><input type="text" id="n_hosts" value="100" spellcheck="false" style="min-width:120px">
+      <div class="hint" id="n_hostout" style="margin:0"></div>
+    </div>
+    <div class="err" id="n_err"></div>
+    <div id="n_out"></div>
+    <div id="n_steps"></div>
+    <div class="hint">黄＝网络位、青＝主机位；掩码支持 CIDR（/24）或点分（255.255.255.0），不连续的掩码会被拒收；/31（点对点）与 /32（单机）特例自动说明；「传统分类」是课程里的 A/B/C/D/E，实际路由早已无类化（CIDR）。</div>
+  </div>
+  <div class="card">
+    <h2>🎯 子网练习 · 出题官</h2>
+    <div class="row">
+      <label>难度</label>
+      <select id="q1_level"><option value="easy">入门（整八位）</option><option value="hard">进阶（任意前缀）</option><option value="custom">自定义范围</option></select><span id="q1_custombox" style="display:none"><label>前缀</label><input type="number" id="q1_pmin" value="26" min="1" max="32" style="width:70px"><label>~</label><input type="number" id="q1_pmax" value="30" min="1" max="32" style="width:70px"></span>
+      <button id="q1_new" class="pill act">🎲 出一题</button>
+      <button id="q1_check" class="pill act">对答案</button>
+      <button id="q1_reveal" class="pill act">看解析</button>
+      <span class="hint" id="q1_streak" style="margin:0"></span>
+    </div>
+    <div class="res" id="q1_q" style="margin-bottom:10px"><div class="k">题目</div><div class="v">（点「🎲 出一题」开始）</div></div>
+    <div class="row">
+      <label>网络地址</label><input type="text" id="q1_net" spellcheck="false">
+      <label>广播地址</label><input type="text" id="q1_bc" spellcheck="false">
+      <label>可用主机数</label><input type="text" id="q1_usable" spellcheck="false" style="min-width:110px">
+    </div>
+    <div class="err" id="q1_err"></div>
+    <div id="q1_out" aria-live="polite"></div>
+    <details class="cheat" style="margin-top:8px">
+      <summary>📕 错题本（本机记录，最多存 50 道）</summary>
+      <div id="q1_wrong"></div>
+    </details>
+    <div class="hint">掩码会随机以 CIDR 或点分呈现——两种读法都要练；看解析会清空连对，先自己算。</div>
+  </div>
+</section>
+
+<footer>数驿 v3.0 · 2026-11-08 · 本地单文件 · 代码席青鸾为你造 🪶</footer>
+</div>
+
+<script>
+//<CORE>
+'use strict';
+const DIGITS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+function digitVal(ch) {
+  return DIGITS.indexOf(ch.toUpperCase());
+}
+function isValidDigits(s, base) {
+  if (!s) return false;
+  for (const ch of s) {
+    const v = digitVal(ch);
+    if (v < 0 || v >= base) return false;
+  }
+  return true;
+}
+function firstBadDigit(s, base) {
+  let i = 0;
+  for (const ch of s) {
+    const v = digitVal(ch);
+    if (v < 0 || v >= base) return { i, ch };
+    i++;
+  }
+  return null;
+}
+function allowedHint(base) {
+  return base <= 10 ? '可用 0 ~ ' + (base - 1) : '可用 0-9 与 A-' + DIGITS[base - 1] + '（不分大小写）';
+}
+function parseDigits(s, base) {
+  let n = 0n;
+  const B = BigInt(base);
+  for (const ch of s) n = n * B + BigInt(digitVal(ch));
+  return n;
+}
+function bigToBase(n, base) {
+  if (n === 0n) return '0';
+  const B = BigInt(base);
+  let s = '';
+  while (n > 0n) {
+    s = DIGITS[Number(n % B)] + s;
+    n /= B;
+  }
+  return s;
+}
+// 解析 [-]?digits[.digits]，返回 {neg,int,fracNum,fracDen,ok} 或 {err}
+function parseNumber(str, base) {
+  str = String(str).trim();
+  if (str.length > 4096) return { err: '输入过长（上限 4096 字符）' };
+  if (!str) return { err: '空输入' };
+  let neg = false;
+  str = str.replace(/\u2212/g, '-');
+  if (str[0] === '+') str = str.slice(1);
+  else if (str[0] === '-') { neg = true; str = str.slice(1); }
+  if (!str || str === '.') return { err: '缺数字' };
+  str = str.replace(/[\s_,，']/g, '');
+  if (!str || str === '.') return { err: '缺数字' };
+  const prefixes = { 16: '0x', 2: '0b', 8: '0o' };
+  const pfx = prefixes[base];
+  if (pfx && str.toLowerCase().startsWith(pfx)) str = str.slice(2);
+  const dot = str.indexOf('.');
+  let ip, fp;
+  if (dot >= 0) {
+    if (str.indexOf('.', dot + 1) >= 0) return { err: '小数点多于一个' };
+    ip = str.slice(0, dot);
+    fp = str.slice(dot + 1);
+  } else { ip = str; fp = ''; }
+  if (!ip && !fp) return { err: '缺数字' };
+  const bad1 = ip ? firstBadDigit(ip, base) : null;
+  if (bad1) return { err: '整数部分第 ' + (bad1.i + 1) + ' 位「' + bad1.ch + '」不是 ' + base + ' 进制数字（' + allowedHint(base) + '）' };
+  const bad2 = fp ? firstBadDigit(fp, base) : null;
+  if (bad2) return { err: '小数部分第 ' + (bad2.i + 1) + ' 位「' + bad2.ch + '」不是 ' + base + ' 进制数字（' + allowedHint(base) + '）' };
+  const int = parseDigits(ip || '0', base);
+  let fracNum = 0n, fracDen = 1n;
+  if (fp) {
+    fracDen = BigInt(base) ** BigInt(fp.length);
+    fracNum = parseDigits(fp, base);
+  }
+  return { neg, int, fracNum, fracDen, ok: true };
+}
+// 长除法判循环：返回 {terminates, cycleStart, cycleLen, digits}；cycleLen -1 表示 maxLen 内未见循环
+function fracCycle(num, den, base, maxLen) {
+  const B = BigInt(base);
+  const seen = new Map();
+  const digits = [];
+  let i = 0;
+  while (num > 0n && i < maxLen) {
+    if (seen.has(num)) {
+      return { terminates: false, cycleStart: seen.get(num), cycleLen: i - seen.get(num), digits };
+    }
+    seen.set(num, i);
+    num *= B;
+    digits.push(DIGITS[Number(num / den)]);
+    num %= den;
+    i++;
+  }
+  return { terminates: num === 0n, cycleStart: -1, cycleLen: num === 0n ? 0 : -1, digits };
+}
+// v0.3：检测深度与显示位数解耦——检测至少 96 位；detectNote 交代循环节／终止位数
+function formatNumberInBase(p, base, fracLen) {
+  const intText = bigToBase(p.int, base);
+  let fracText = '', exact = true, cycleStart = -1, cycleLen = 0, detectNote = '', tail = '';
+  if (p.fracDen > 1n) {
+    const depth = Math.max(fracLen, 96);
+    const cyc = fracCycle(p.fracNum, p.fracDen, base, depth);
+    const full = cyc.digits.join('');
+    exact = cyc.terminates;
+    cycleStart = cyc.cycleStart;
+    cycleLen = cyc.cycleLen;
+    fracText = cyc.digits.slice(0, fracLen).join('');
+    if (exact) {
+      if (full.length > fracLen) { detectNote = '（共 ' + full.length + ' 位小数后终止）'; tail = '…'; }
+    } else if (cycleLen > 0) {
+      if (cycleStart + cycleLen > fracLen) { detectNote = '（循环节自第 ' + (cycleStart + 1) + ' 位起、长 ' + cycleLen + ' 位）'; tail = '…'; }
+    } else {
+      detectNote = '（' + depth + ' 位内未见循环节）'; tail = '…';
+    }
+  }
+  const cycleVisible = !exact && cycleLen > 0 && (cycleStart + cycleLen) <= fracLen;
+  let fracShow = fracText;
+  if (cycleVisible) fracShow = fracText.slice(0, cycleStart) + '(' + fracText.slice(cycleStart) + ')';
+  const text = (p.neg ? '-' : '') + intText + (fracShow ? '.' + fracShow : '') + tail;
+  return { text, intText, fracText, fracShow, exact, cycleStart, cycleLen, detectNote, tail };
+}
+// 千位分组（仅整数部分；窄不换行空格 U+202F）
+function dispThousands(s) {
+  const i = s.search(/[.(]/);
+  const head = i < 0 ? s : s.slice(0, i);
+  const tail = i < 0 ? '' : s.slice(i);
+  const sign = head.startsWith('-') ? '-' : '';
+  const digits = sign ? head.slice(1) : head;
+  return sign + digits.replace(/\B(?=(\d{3})+(?!\d))/g, '\u202F') + tail;
+}
+// 二进制串按 k 位分组（自小数点向两侧），bits 只含 0/1 与可选一个小数点
+function groupBinary(bits, k) {
+  const re = new RegExp('(\\d{' + k + '})(?=\\d)', 'g');
+  const dot = bits.indexOf('.');
+  let ip = dot >= 0 ? bits.slice(0, dot) : bits;
+  let fp = dot >= 0 ? bits.slice(dot + 1) : '';
+  ip = '0'.repeat((k - ip.length % k) % k) + ip;
+  fp = fp + '0'.repeat((k - fp.length % k) % k);
+  const ipg = ip.replace(re, '$1 ');
+  const fpg = fp ? fp.replace(re, '$1 ') : '';
+  const grouped = (ipg + (fp ? '.' + fpg : '')).trim();
+  const groups = (ipg + (fp ? ' ' + fpg : '')).split(/[\s.]/).filter(Boolean);
+  const mapLine = groups.map(g => g + '→' + DIGITS[parseInt(g, 2)]).join('  ');
+  return { grouped, mapLine };
+}
+// 短除法步骤：十进制整数 n 反复除以 base；超过 2^53 返回 null；truncated 标记 32 行截断
+function shortDivisionSteps(n, base) {
+  if (n > 9007199254740991n) return null;
+  let v = Number(n);
+  const lines = [];
+  while (v > 0 && lines.length < 32) {
+    const q = Math.floor(v / base), r = v % base;
+    lines.push(v + ' ÷ ' + base + ' = ' + q + ' …… 余 ' + DIGITS[r]);
+    v = q;
+  }
+  return { lines, truncated: v > 0 };
+}
+// 按权展开：srcBase 进制整数字符串 → 十进制
+function expansionTerms(intText, srcBase) {
+  const s = intText.replace(/^0+(?=.)/, '');
+  if (s.length > 16) return null;
+  const terms = [];
+  for (let i = 0; i < s.length; i++) {
+    const pow = s.length - 1 - i;
+    terms.push(s[i] + '×' + srcBase + '^' + pow);
+  }
+  return { terms: terms.join(' + '), value: bigToBase(parseDigits(s, srcBase), 10) };
+}
+// 三码：v 为 BigInt，W 位宽
+function complementTriple(v, W) {
+  const half = 1n << BigInt(W - 1);
+  const full = 1n << BigInt(W);
+  if (v < -half || v >= half) return { err: '超出 ' + W + ' 位范围（−' + bigToBase(half, 10) + ' ~ ' + bigToBase(half - 1n, 10) + '）' };
+  if (v >= 0n) {
+    const mag = bigToBase(v, 2).padStart(W - 1, '0');
+    return { yuan: '0' + mag, fan: '0' + mag, bu: '0' + mag };
+  }
+  if (v === -half) {
+    return { yuan: null, fan: null, bu: bigToBase(full + v, 2).padStart(W, '0'),
+      note: '−2^(W−1) 是补码独占的表示——原码／反码在这个位宽下装不下' };
+  }
+  const magBits = bigToBase(-v, 2).padStart(W - 1, '0');
+  const yuan = '1' + magBits;
+  const fan = '1' + [...magBits].map(b => b === '1' ? '0' : '1').join('');
+  const bu = bigToBase(full + v, 2).padStart(W, '0');
+  return { yuan, fan, bu };
+}
+// 补码解读：无符号比特值 u → 有符号值
+function interpretBits(u, W) {
+  const half = 1n << BigInt(W - 1);
+  const full = 1n << BigInt(W);
+  if (u < 0n || u >= full) return { err: '超出 ' + W + ' 位宽' };
+  return { unsigned: u, signed: u >= half ? u - full : u };
+}
+function decomposeFloat32(x) {
+  const dv = new DataView(new ArrayBuffer(4));
+  dv.setFloat32(0, x);
+  const bits = dv.getUint32(0);
+  const s = bits >>> 31;
+  const e = (bits >>> 23) & 0xFF;
+  const m = bits & 0x7FFFFF;
+  let cls, expVal = null;
+  if (e === 0xFF) cls = (m === 0) ? (s ? '负无穷大' : '正无穷大') : 'NaN';
+  else if (e === 0) { cls = (m === 0) ? (s ? '负零' : '正零') : '非规格化数（次正规）'; expVal = -126; }
+  else { cls = '规格化数'; expVal = e - 127; }
+  return {
+    hex: '0x' + bits.toString(16).toUpperCase().padStart(8, '0'),
+    s, e, m,
+    eBits: e.toString(2).padStart(8, '0'),
+    mBits: m.toString(2).padStart(23, '0'),
+    cls, expVal, stored: dv.getFloat32(0)
+  };
+}
+function decomposeFloat64(x) {
+  const dv = new DataView(new ArrayBuffer(8));
+  dv.setFloat64(0, x);
+  const bits = dv.getBigUint64(0);
+  const s = Number(bits >> 63n);
+  const e = Number((bits >> 52n) & 0x7FFn);
+  const m = bits & ((1n << 52n) - 1n);
+  let cls, expVal = null;
+  if (e === 0x7FF) cls = (m === 0n) ? (s ? '负无穷大' : '正无穷大') : 'NaN';
+  else if (e === 0) { cls = (m === 0n) ? (s ? '负零' : '正零') : '非规格化数（次正规）'; expVal = -1022; }
+  else { cls = '规格化数'; expVal = e - 1023; }
+  return {
+    hex: '0x' + bits.toString(16).toUpperCase().padStart(16, '0'),
+    s, e, m,
+    eBits: e.toString(2).padStart(11, '0'),
+    mBits: m.toString(2).padStart(52, '0'),
+    cls, expVal, stored: dv.getFloat64(0)
+  };
+}
+function utf8Encode(cp) {
+  if (cp < 0x80) return [cp];
+  if (cp < 0x800) return [0xC0 | (cp >> 6), 0x80 | (cp & 63)];
+  if (cp < 0x10000) return [0xE0 | (cp >> 12), 0x80 | ((cp >> 6) & 63), 0x80 | (cp & 63)];
+  return [0xF0 | (cp >> 18), 0x80 | ((cp >> 12) & 63), 0x80 | ((cp >> 6) & 63), 0x80 | (cp & 63)];
+}
+// ---------- 网络（v0.3 新） ----------
+function parseIPv4(s) {
+  s = String(s).trim();
+  const parts = s.split('.');
+  if (parts.length !== 4) return { err: 'IPv4 需四段十进制（如 192.168.1.1）' };
+  const octets = [];
+  for (const p of parts) {
+    if (!/^\d{1,3}$/.test(p)) return { err: '「' + p + '」不是合法八位组（0~255 的十进制）' };
+    const v = parseInt(p, 10);
+    if (v > 255) return { err: '「' + p + '」超过 255' };
+    octets.push(v);
+  }
+  return { ok: true, octets };
+}
+// 掩码：/24 形式或点分形式 → 前缀长度；点分必须连续
+function parseMask(s) {
+  s = String(s).trim();
+  if (/^\/?\d{1,2}$/.test(s)) {
+    const n = parseInt(s.replace(/^\//, ''), 10);
+    if (n > 32) return { err: '前缀长度 0 ~ 32' };
+    return { prefix: n };
+  }
+  const pr = parseIPv4(s);
+  if (pr.err) return { err: '掩码格式：/24 或 255.255.255.0' };
+  let prefix = 0, done = false;
+  for (const o of pr.octets) {
+    for (let b = 7; b >= 0; b--) {
+      if ((o >> b) & 1) {
+        if (done) return { err: '掩码必须连续（1 之后不能出现 0）' };
+        prefix++;
+      } else done = true;
+    }
+  }
+  return { prefix };
+}
+function prefixToMask(prefix) {
+  const oct = [];
+  for (let i = 0; i < 4; i++) {
+    const rem = Math.max(0, Math.min(8, prefix - i * 8));
+    oct.push(rem === 0 ? 0 : (0xFF << (8 - rem)) & 0xFF);
+  }
+  return oct;
+}
+function ipToBigInt(octets) {
+  return (BigInt(octets[0]) << 24n) | (BigInt(octets[1]) << 16n) | (BigInt(octets[2]) << 8n) | BigInt(octets[3]);
+}
+function bigIntToIp(n) {
+  return [Number(n >> 24n) & 255, Number(n >> 16n) & 255, Number(n >> 8n) & 255, Number(n & 255n)];
+}
+function subnetCalc(ipOct, prefix) {
+  const ALL = 0xFFFFFFFFn;
+  const ip = ipToBigInt(ipOct);
+  const maskN = (~((1n << BigInt(32 - prefix)) - 1n)) & ALL;
+  const net = ip & maskN;
+  const bc = net | (~maskN & ALL);
+  const hostBits = 32 - prefix;
+  const total = 1n << BigInt(hostBits);
+  let usable, first, last;
+  if (hostBits === 0) { usable = 1n; first = net; last = net; }
+  else if (hostBits === 1) { usable = 2n; first = net; last = bc; }
+  else { usable = total - 2n; first = net + 1n; last = bc - 1n; }
+  const o1 = ipOct[0], o2 = ipOct[1];
+  const cls = o1 < 128 ? 'A 类' : o1 < 192 ? 'B 类' : o1 < 224 ? 'C 类' : o1 < 240 ? 'D 类（组播）' : 'E 类（保留）';
+  let priv = '公有地址';
+  if (o1 === 10 || (o1 === 172 && o2 >= 16 && o2 <= 31) || (o1 === 192 && o2 === 168)) priv = '私有地址（RFC 1918）';
+  else if (o1 === 127) priv = '环回地址（loopback）';
+  else if (o1 === 169 && o2 === 254) priv = '链路本地（APIPA 自动配置）';
+  else if (o1 === 0) priv = '保留（0 网段）';
+  else if (o1 >= 224 && o1 < 240) priv = '组播地址段';
+  return { net, bc, first, last, total, usable, cls, priv, maskN, hostBits };
+}
+// 主机数反推前缀：可用主机 ≥ n 的最小掩码（经典 2^h−2 口径，/31、/32 特例另注）
+function hostsToPrefix(n) {
+  if (n < 1n) return { err: '主机数须 ≥ 1' };
+  const need = n + 2n;
+  let bits = 0;
+  while (bits <= 32 && (1n << BigInt(bits)) < need) bits++;
+  if (bits > 32) return { err: '超出 IPv4 总容量（约 42.9 亿）' };
+  return { prefix: 32 - bits, hostBits: bits, total: 1n << BigInt(bits), usable: (1n << BigInt(bits)) - 2n };
+}
+// 1 的个数（Kernighan 清最低位 1）
+function popcount(v) {
+  let c = 0;
+  while (v > 0n) { v &= v - 1n; c++; }
+  return c;
+}
+// ---------- 出题官（v0.6 新；v1.2 扩展；rand 可注入保断言确定） ----------
+function genQuestion(level, rand, pmin, pmax) {
+  const r = rand || Math.random;
+  const ri = (n) => Math.min(n - 1, Math.floor(r() * n));
+  let prefixes;
+  if (level === 'custom') {
+    let lo = Math.max(1, Math.min(32, parseInt(pmin, 10) || 26));
+    let hi = Math.max(1, Math.min(32, parseInt(pmax, 10) || 30));
+    if (lo > hi) { const t = lo; lo = hi; hi = t; }
+    prefixes = [];
+    for (let p2 = lo; p2 <= hi; p2++) prefixes.push(p2);
+  } else if (level === 'hard') {
+    prefixes = [8, 12, 16, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
+  } else {
+    prefixes = [8, 16, 24];
+  }
+  return { ip: [ri(256), ri(256), ri(256), ri(256)], prefix: prefixes[ri(prefixes.length)] };
+}
+function genConvQuestion(level, kind, rand) {
+  const r = rand || Math.random;
+  const ri = (n) => Math.min(n - 1, Math.floor(r() * n));
+  const srcs = [2, 8, 10, 16];
+  const srcBase = srcs[ri(4)];
+  let tgtBase = srcs[(ri(4) + 1 + ri(3)) % 4];
+  if (tgtBase === srcBase) tgtBase = srcs[(srcs.indexOf(srcBase) + 2) % 4];
+  const max = level === 'hard' ? 1048575 : (level === 'mid' ? 9999 : 99);
+  const intPart = BigInt(ri(max) + 1);
+  let neg = false;
+  if (kind !== 'int' && ri(4) === 0) neg = true;
+  let num = 0n, den = 1n;
+  if (kind === 'frac' && ri(2) === 0) {
+    // 分母素因子取源∩目标进制，保证小数在双边进制都精确可写
+    const pf = { 2: [2], 8: [2], 16: [2], 10: [2, 5] };
+    const common = pf[srcBase].filter((p2) => pf[tgtBase].indexOf(p2) >= 0);
+    const m = 1 + ri(3);
+    for (let i = 0; i < m; i++) den *= BigInt(common[ri(common.length)]);
+    num = BigInt(1 + ri(Number(den) - 1));
+  }
+  const QNum = (neg ? -1n : 1n) * (intPart * den + num);
+  return { srcBase: srcBase, tgtBase: tgtBase, QNum: QNum, QDen: den };
+}
+function rationalParts(QNum, QDen) {
+  const neg = QNum < 0n;
+  const a = neg ? -QNum : QNum;
+  return { neg: neg, int: a / QDen, fracNum: a % QDen, fracDen: QDen };
+}
+function stripNum(s) {
+  return String(s).replace(/[\s,，\u202F]/g, '');
+}
+function checkQuizIp(userStr, expectedOct) {
+  const p = parseIPv4(stripNum(userStr));
+  if (p.err) return { ok: false, msg: p.err };
+  const ok = p.octets[0] === expectedOct[0] && p.octets[1] === expectedOct[1] &&
+    p.octets[2] === expectedOct[2] && p.octets[3] === expectedOct[3];
+  return { ok: ok };
+}
+// 有理数精确等值判卷：0.50 ≡ 0.5，符号与分式叉乘比较
+function checkQuizValue(userStr, base, QNum, QDen) {
+  const s = stripNum(userStr);
+  if (s.length > 4096) return { ok: false, msg: '输入过长（上限 4096 字符）' };
+  const p = parseNumber(s, base);
+  if (p.err) return { ok: false, msg: p.err };
+  const userNum = (p.neg ? -1n : 1n) * (p.int * p.fracDen + p.fracNum);
+  return { ok: userNum * QDen === QNum * p.fracDen };
+}
+// 战绩行：累计 n 题对 m 题（正确率）
+function accText(answered, right) {
+  if (!answered) return '还没开练';
+  return '累计 ' + answered + ' 题对 ' + right + ' 题（' + Math.round(right * 100 / answered) + '%）';
+}
+// 自右分组（不补零）：十六进制等字母数字串的千位式分组
+function groupFromRight(s, k) {
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    out += s[i];
+    if (s.length - i > 1 && (s.length - i) % k === 1) out += ' ';
+  }
+  return out;
+}
+//</CORE>
+
+// ---------- 界面层 ----------
+const $ = (id) => document.getElementById(id);
+let lastConv = null;
+function esc(s) {
+  return String(s)
+    .replace(/(?:[\uD800-\uDBFF][\uDC00-\uDFFF])|[\uD800-\uDFFF]/g, (m) => m.length === 2 ? m : '\uFFFD')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function resCard(k, v, raw, meta, base) {
+  raw = raw === undefined ? v : raw;
+  return '<div class="res"><div class="k">' + esc(k) +
+    (meta ? '<span class="meta">' + esc(meta) + '</span>' : '') + '</div>' +
+    '<div class="v" data-raw="' + esc(raw) + '">' + esc(v) + '</div>' +
+    '<div class="foot"><button class="copy" title="复制原始值">复制</button>' +
+    (base ? '<button class="feed" data-base="' + base + '" title="填回输入框继续换算">设为输入</button>' : '') +
+    '</div></div>';
+}
+// 剪贴板写入＋按钮反馈（成功/失败如实回填，per-button 定时器防连点互踩，超时复位）
+function copyText(text, btn, doneLabel, resetLabel, resetMs) {
+  const done = () => { btn.textContent = doneLabel; };
+  const fail = () => { btn.textContent = '复制失败'; };
+  if (btn._copyTimer) clearTimeout(btn._copyTimer);
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(fail);
+  else fail();
+  btn._copyTimer = setTimeout(() => { btn.textContent = resetLabel; }, resetMs);
+}
+// .steps 统一构建：标题＋行集＋可选注解；many 强制双栏仅用于互不相关的短行
+function stepsBox(title, lines, note, many, extraHtml) {
+  return '<div class="steps"><h3>' + esc(title) + '</h3>' +
+    '<div class="' + (many || lines.length > 10 ? 'many' : '') + '">' +
+    lines.map(l => '<p>' + esc(l) + '</p>').join('') + '</div>' +
+    (note ? '<p class="note">' + esc(note) + '</p>' : '') +
+    (extraHtml || '') + '</div>';
+}
+document.body.addEventListener('click', (ev) => {
+  const t = ev.target;
+  if (!t.classList) return;
+  if (t.id === 'c_copyall') {
+    if (!lastConv) return;
+    const names = { 2: '二进制', 8: '八进制', 10: '十进制', 16: '十六进制' };
+    const L = ['输入：' + lastConv.raw + '（' + lastConv.src + ' 进制）'];
+    for (const b of [2, 8, 10, 16]) L.push(names[b] + '：' + lastConv.results[b].text);
+    L.push(lastConv.tgt + ' 进制：' + lastConv.rc.text);
+    copyText(L.join('\n'), t, '已复制 ✓', '复制全部结果', 1500);
+  } else if (t.classList.contains('copy')) {
+    const v = t.parentElement.querySelector('.v');
+    const raw = v && v.dataset.raw !== undefined ? v.dataset.raw : (v ? v.textContent : '');
+    copyText(raw, t, '已复制', '复制', 1200);
+  } else if (t.classList.contains('feed')) {
+    const v = t.parentElement.querySelector('.v');
+    if (!v) return;
+    $('c_in').value = v.dataset.raw !== undefined ? v.dataset.raw : v.textContent;
+    $('c_src').value = t.dataset.base;
+    renderConv();
+    scrollToPanel('p-conv');
+  } else if (t.classList.contains('fex')) {
+    $('f_in').value = t.dataset.v;
+    renderFloat();
+  } else if (t.classList.contains('qb')) {
+    $('c_src').value = t.dataset.b;
+    renderConv();
+  }
+});
+const PANEL_NAMES = { conv: '换数', bits: '位算', comp: '三码', float: '浮点', char: '字符', net: '网络' };
+function scrollToPanel(id) {
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById(id).scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+}
+// 页签激活单点：hash 写入（push）或 hashchange 回放（replay）
+function activatePanel(name, push) {
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.p === name));
+  document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === 'p-' + name));
+  document.title = '数驿 · ' + (PANEL_NAMES[name] || '') + ' · 进制转换与数字小工坊';
+  window.scrollTo(0, 0);
+  if (push && location.hash !== '#' + name) location.hash = name;
+}
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.addEventListener('click', () => activatePanel(btn.dataset.p, true));
+});
+window.addEventListener('hashchange', () => {
+  const name = location.hash.slice(1);
+  if (PANEL_NAMES[name]) activatePanel(name, false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.isComposing || e.ctrlKey || e.altKey || e.metaKey) return;
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+  const i = '123456'.indexOf(e.key);
+  if (i >= 0) { const bs = document.querySelectorAll('nav button'); if (bs[i]) bs[i].click(); }
+});
+// （数字快捷键监听已并入上方导航区注册）
+(function initTheme() {
+  const btn = $('theme_btn');
+  const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+  let t = null;
+  try { t = localStorage.getItem('shuyi-theme'); } catch (e) { t = null; }
+  if (!t) t = mq && mq.matches ? 'dark' : 'light';
+  const apply = () => {
+    document.documentElement.dataset.theme = t;
+    btn.textContent = t === 'dark' ? '☀️ 浅色' : '🌙 深色';
+  };
+  apply();
+  btn.addEventListener('click', () => {
+    t = t === 'dark' ? 'light' : 'dark';
+    apply();
+    try {
+      const sys = mq && mq.matches ? 'dark' : 'light';
+      if (t === sys) localStorage.removeItem('shuyi-theme');
+      else localStorage.setItem('shuyi-theme', t);
+    } catch (e) {}
+  });
+  if (mq && mq.addEventListener) mq.addEventListener('change', () => {
+    let manual = null;
+    try { manual = localStorage.getItem('shuyi-theme'); } catch (e) { manual = null; }
+    if (manual) return;
+    t = mq.matches ? 'dark' : 'light';
+    apply();
+  });
+})();
+
+(function fillBases() {
+  const opt = (b) => '<option value="' + b + '">' + b + ' 进制</option>';
+  let common = '', rest = '';
+  for (let b = 2; b <= 36; b++) {
+    if (b === 2 || b === 8 || b === 10 || b === 16) common += opt(b);
+    else rest += opt(b);
+  }
+  const h = '<optgroup label="常用">' + common + '</optgroup><optgroup label="全部">' + rest + '</optgroup>';
+  $('c_src').innerHTML = h;
+  $('c_tgt').innerHTML = h;
+  $('c_src').value = '10'; $('c_tgt').value = '16';
+})();
+
+(function fillCheat() {
+  const ns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 20, 24, 32];
+  let t1 = '<table><tr><th>n</th><th>2ⁿ</th><th>十六进制</th></tr>';
+  for (const n of ns) {
+    const v = 2 ** n;
+    t1 += '<tr><td class="mono">' + n + '</td><td class="mono">' + esc(dispThousands(String(v))) + '</td><td class="mono">0x' + v.toString(16).toUpperCase() + '</td></tr>';
+  }
+  t1 += '</table>';
+  let t2 = '<table><tr><th>十进制</th><th>十六进制</th><th>二进制</th></tr>';
+  for (let i = 0; i < 16; i++) t2 += '<tr><td class="mono">' + i + '</td><td class="mono">' + i.toString(16).toUpperCase() + '</td><td class="mono">' + i.toString(2).padStart(4, '0') + '</td></tr>';
+  t2 += '</table>';
+  $('c_cheat').innerHTML = '<div class="cols">' + t1 + t2 + '</div>';
+})();
+
+(function fillAria() {
+  const A = {
+    c_in: '换算数值', c_src: '源进制', c_prec: '小数位数', c_tgt: '目标进制',
+    b_base: '位算输入进制', b_a: '位算操作数 A', b_b: '位算操作数 B', b_w: '位算位宽', b_k: '位算移位位数',
+    t_w: '三码位宽', t_in: '三码十进制整数', t2_in: '补码比特位输入', t2_form: '补码输入形式', t2_w: '补码解读位宽',
+    f_in: '浮点十进制数', f2_in: '浮点十六进制比特',
+    s_in: '编码查看文本', s2_enc: '字节解码编码', s2_in: '字节解码输入',
+    n_ip: 'IP 地址', n_mask: '子网掩码', n_hosts: '需要的主机数',
+    q1_level: '子网练习难度', q1_pmin: '自定义前缀下限', q1_pmax: '自定义前缀上限', q1_net: '子网练习答案 网络地址', q1_bc: '子网练习答案 广播地址', q1_usable: '子网练习答案 可用主机数',
+    q2_level: '转制练习难度', q2_kind: '转制练习题型', q2_ans: '转制练习答案'
+  };
+  Object.keys(A).forEach((id) => { const el = $(id); if (el) el.setAttribute('aria-label', A[id]); });
+  ['c_err', 'b_err', 't_err', 't2_err', 'f_err', 'f2_err', 's_err', 's2_err', 'n_err', 'q1_err', 'q2_err']
+    .forEach((id) => { const el = $(id); if (el) el.setAttribute('aria-live', 'polite'); });
+})();
+
+(function fillInputUX() {
+  ['c_prec', 'b_k', 'q1_pmin', 'q1_pmax', 'n_hosts', 'q1_usable']
+    .forEach((id) => { const el = $(id); if (el) { el.setAttribute('inputmode', 'numeric'); el.setAttribute('autocomplete', 'off'); } });
+  ['q1_net', 'q1_bc', 'q2_ans']
+    .forEach((id) => { const el = $(id); if (el) el.setAttribute('enterkeyhint', 'done'); });
+  ['q1_usable']
+    .forEach((id) => { const el = $(id); if (el) el.setAttribute('inputmode', 'numeric'); });
+  ['q1_net', 'q1_bc', 'n_ip']
+    .forEach((id) => { const el = $(id); if (el) el.setAttribute('inputmode', 'decimal'); });
+  document.querySelectorAll('input[type=text]').forEach((el) => el.setAttribute('autocomplete', 'off'));
+  document.querySelectorAll('input[type=text]').forEach((el) => el.setAttribute('spellcheck', 'false'));
+})();
+
+// ===== 面板：换数 =====
+function mulBaseSteps(p, prec) {
+  let v = Number(p.fracNum) / Number(p.fracDen);
+  if (!isFinite(v)) return null;
+  // 十进制 double 只精确到 ~15 位：超长小数的演示步骤会失真，宁缺毋滥（结果区换算走 BigInt 仍精确）
+  if (v !== 0 && (Math.abs(v) < 1e-9 || Number(p.fracDen) >= 1e15)) return null;
+  const lines = [];
+  const fmt = (x) => {
+    let s = x.toFixed(10).replace(/0+$/, '').replace(/\.$/, '');
+    return s === '' ? '0' : s;
+  };
+  for (let i = 0; i < Math.min(prec, 16); i++) {
+    if (v === 0) break;
+    const t = v * 2;
+    const d = Math.floor(t);
+    lines.push(fmt(v) + ' × 2 = ' + fmt(t) + ' → 取 ' + d);
+    v = t - d;
+  }
+  if (v !== 0) lines.push('（未归零：这是循环小数，结果区已标出循环节）');
+  return lines;
+}
+
+function buildStepsHTML(p, src, results, prec) {
+  const secs = [];
+  const srcIntText = formatNumberInBase(p, src, prec).intText;
+  const decIntText = bigToBase(p.int, 10);
+  if (src !== 10 && p.int > 0n) {
+    const ex = expansionTerms(srcIntText, src);
+    if (ex) secs.push({
+      t: srcIntText + '（' + src + ' 进制）→ 十进制：按权展开',
+      lines: [ex.terms + ' = ' + ex.value],
+      note: '每一位乘以所在位的位权（基数的幂，自小数点向左从 0 起）；其余进制可经十进制中转'
+    });
+    else secs.push({
+      t: '按权展开',
+      lines: ['整数超过 16 位，展开式演示从略——方法同前：每位乘位权再相加'],
+      note: ''
+    });
+  }
+  if (src === 10 && p.int > 0n) {
+    const sd = shortDivisionSteps(p.int, 2);
+    const lines = sd ? sd.lines.slice() : ['整数超过 2^53，演示从略——方法不变：反复除 2 记余数，余数倒着读'];
+    if (sd && sd.truncated) lines.push('（位数更多，后续同法从略）');
+    secs.push({ t: '十进制 ' + decIntText + ' → 二进制：短除 2 取余', lines: lines, note: '余数从下往上读，就是二进制结果' });
+  }
+  if (p.fracDen > 1n && p.fracNum > 0n && src === 10) {
+    const lines = mulBaseSteps(p, prec);
+    if (lines) {
+      const r2 = results[2];
+      let note = '每次乘 2 取整数部分当一位；归零即止，不归零为循环小数';
+      if (r2 && !r2.exact && r2.cycleLen > 0) note += '——余数判重：循环节自第 ' + (r2.cycleStart + 1) + ' 位起、长 ' + r2.cycleLen + ' 位';
+      else if (r2 && r2.detectNote) note += '——' + r2.detectNote.replace(/[（）]/g, '');
+      secs.push({
+        t: '小数 0.' + formatNumberInBase(p, 10, prec).fracText + ' → 二进制：乘 2 取整',
+        lines: lines,
+        note: note
+      });
+    }
+  }
+  const binBits = results[2].intText + (results[2].fracText ? '.' + results[2].fracText : '');
+  if (binBits.replace(/\./g, '') !== '0' && binBits.replace(/\./g, '').length <= 24) {
+    for (const g of [3, 4]) {
+      const gr = groupBinary(binBits, g);
+      secs.push({
+        t: '二进制 → ' + (g === 3 ? '八' : '十六') + '进制：每 ' + g + ' 位一组直接读',
+        lines: [gr.grouped, gr.mapLine],
+        note: '整数部分从右往左分组、不足左补 0；小数部分从左往右分组、不足右补 0'
+      });
+    }
+  }
+  if (!secs.length) secs.push({ t: '（本次输入没有可演示的步骤，换个数试试）', lines: [], note: '' });
+  const CN = ['①', '②', '③', '④', '⑤', '⑥'];
+  return secs.map((s, i) => stepsBox(CN[i] + ' ' + s.t, s.lines, s.note)).join('');
+}
+
+function renderConv() {
+  const raw = $('c_in').value;
+  const src = parseInt($('c_src').value, 10);
+  const tgt = parseInt($('c_tgt').value, 10);
+  const precRaw = parseInt($('c_prec').value, 10);
+  const prec = Math.min(32, Math.max(1, isNaN(precRaw) ? 10 : precRaw));
+  const showSteps = $('c_steps').checked;
+  $('c_in').placeholder = src === 10 ? '如 156 或 0.6875' : src === 2 ? '如 1010.11' : src === 16 ? '如 0x1F 或 FF' : '按 ' + src + ' 进制输入';
+  document.querySelectorAll('.qb').forEach(p => p.classList.toggle('on', p.dataset.b === String(src)));
+  const errBox = $('c_err'), out = $('c_out'), stepbox = $('c_stepbox'), custom = $('c_custom');
+  if (String(raw).trim() === '') {
+    errBox.textContent = '';
+    out.innerHTML = '<div class="res" style="grid-column:1/-1;text-align:center;color:var(--muted)">（等一个数——输入任意进制的值就开始换算）</div>';
+    stepbox.innerHTML = ''; custom.innerHTML = ''; lastConv = null;
+    $('c_copyall').disabled = true;
+    return;
+  }
+  const p = parseNumber(raw, src);
+  if (p.err) {
+    errBox.textContent = '✗ ' + p.err;
+    out.innerHTML = ''; stepbox.innerHTML = ''; custom.innerHTML = ''; lastConv = null;
+    $('c_copyall').disabled = true;
+    return;
+  }
+  errBox.textContent = '';
+  const bases = [2, 8, 10, 16];
+  const names = { 2: '二进制', 8: '八进制', 10: '十进制', 16: '十六进制' };
+  let h = '';
+  const results = {};
+  for (const b of bases) {
+    const r2 = results[b] = formatNumberInBase(p, b, prec);
+    let shown = r2.text, meta = '';
+    if (b === 2) {
+      const intDisp = r2.intText === '0' ? '0' : groupBinary(r2.intText, 4).grouped;
+      let fracDisp = '';
+      if (r2.fracText) {
+        fracDisp = !r2.exact ? r2.fracShow
+          : (r2.fracText.length % 4 === 0 ? groupBinary('0.' + r2.fracText, 4).grouped.split('.').pop() : r2.fracText);
+      }
+      shown = (p.neg ? '-' : '') + intDisp + (fracDisp ? '.' + fracDisp : '') + r2.tail;
+      meta = r2.intText.length + ' 位整数' +
+        (r2.fracText ? ' ＋ ' + r2.fracText.length + ' 位小数' : '') +
+        (r2.detectNote ? ' ' + r2.detectNote : '');
+    } else if (b === 16) {
+      if (r2.intText.length >= 8) {
+        shown = (p.neg ? '-' : '') + groupFromRight(r2.intText, 4) + (r2.fracShow ? '.' + r2.fracShow : '') + r2.tail;
+      }
+    } else if (b === 10) {
+      shown = dispThousands(r2.text);
+    }
+    h += resCard(names[b], shown, r2.text, meta, b);
+  }
+  out.innerHTML = h;
+  const rc = formatNumberInBase(p, tgt, prec);
+  custom.style.display = (tgt === 2 || tgt === 8 || tgt === 10 || tgt === 16) ? 'none' : '';
+  custom.innerHTML = resCard(tgt + ' 进制', rc.text, rc.text, '', tgt);
+  stepbox.innerHTML = showSteps ? buildStepsHTML(p, src, results, prec) : '';
+  lastConv = { raw: raw, src: src, tgt: tgt, results: results, rc: rc };
+  $('c_copyall').disabled = false;
+}
+
+// ===== 面板：位算 =====
+function renderBits() {
+  const base = parseInt($('b_base').value, 10);
+  const W = parseInt($('b_w').value, 10);
+  const k = BigInt(Math.max(0, Math.min(64, parseInt($('b_k').value, 10) || 0)));
+  const err = $('b_err'), note = $('b_note'), out = $('b_out');
+  const pa = parseNumber($('b_a').value, base);
+  const pb = parseNumber($('b_b').value, base);
+  if ($('b_a').value.trim() === '' && $('b_b').value.trim() === '') {
+    err.textContent = '';
+    note.textContent = '（填上 A 和 B 就开始算）';
+    out.innerHTML = '';
+    return;
+  }
+  if (pa.err) { err.textContent = '✗ A：' + pa.err; note.textContent = ''; out.innerHTML = ''; return; }
+  if (pb.err) { err.textContent = '✗ B：' + pb.err; note.textContent = ''; out.innerHTML = ''; return; }
+  if ((pa.fracDen > 1n && pa.fracNum !== 0n) || (pb.fracDen > 1n && pb.fracNum !== 0n)) { err.textContent = '✗ 位运算只对整数有意义（60.0 这类整值写法可以）'; note.textContent = ''; out.innerHTML = ''; return; }
+  err.textContent = '';
+  const mask = (1n << BigInt(W)) - 1n;
+  const A = pa.neg ? -pa.int : pa.int;
+  const B = pb.neg ? -pb.int : pb.int;
+  const notes = [];
+  if (pa.neg || pb.neg) notes.push('输入带负号：按补码低 ' + W + ' 位解释（如 −5 → ' + bigToBase(mask - 4n, 2).padStart(W, '0') + '）');
+  if ((A & mask) !== A) notes.push('A 超出 ' + W + ' 位宽，已按低 ' + W + ' 位截断——需要完整值请加大位宽');
+  if ((B & mask) !== B) notes.push('B 超出 ' + W + ' 位宽，已按低 ' + W + ' 位截断——需要完整值请加大位宽');
+  note.textContent = notes.join('　｜　');
+  const patA = A & mask, patB = B & mask;
+  const rows = [
+    ['A', patA], ['B', patB],
+    ['A AND B（与：两边都是 1 才得 1）', patA & patB],
+    ['A OR B（或：有 1 即得 1）', patA | patB],
+    ['A XOR B（异或：不同才得 1）', patA ^ patB],
+    ['NOT A（按位取反，限位宽）', ~patA],
+    ['A 左移 ' + k + ' 位（低位补 0）', patA << k],
+    ['A 逻辑右移 ' + k + ' 位（高位补 0）', patA >> k],
+    ['A 算术右移 ' + k + ' 位（符号位填充）', (BigInt.asIntN(W, patA) >> k) & mask],
+  ];
+  let h = '<table><tr><th>运算</th><th>二进制（' + W + ' 位）</th><th>十六进制</th><th>无符号</th><th>有符号（补码）</th><th>1 的个数</th></tr>';
+  for (const r of rows) {
+    const v = r[1] & mask;
+    const binG = groupBinary(bigToBase(v, 2).padStart(W, '0'), 4).grouped.replace(/1/g, '<span class="b1">1</span>');
+    const hex = bigToBase(v, 16).padStart(W / 4, '0');
+    h += '<tr><td>' + esc(r[0]) + '</td><td class="mono">' + binG + '</td><td class="mono">0x' + hex + '</td><td class="mono">' + v.toString(10) + '</td><td class="mono">' + interpretBits(v, W).signed.toString(10) + '</td><td class="mono">' + popcount(v) + '</td></tr>';
+  }
+  out.innerHTML = h + '</table>';
+}
+
+// ===== 面板：三码 =====
+function renderComp() {
+  const W = parseInt($('t_w').value, 10);
+  const err = $('t_err'), out = $('t_out'), hint = $('t_hint'), steps = $('t_steps');
+  const rawIn = $('t_in').value.trim().replace(/^\+/, '').replace(/\u2212/g, '-').replace(/[\s_，']/g, '');
+  if (rawIn === '') {
+    err.textContent = '';
+    out.innerHTML = ''; steps.innerHTML = '';
+    hint.textContent = '（填个十进制整数就开始——如 -12、128）';
+    return;
+  }
+  if (!/^-?\d+$/.test(rawIn)) {
+    err.textContent = '✗ 请输入十进制整数（可带负号，如 -12）';
+    out.innerHTML = ''; hint.textContent = ''; steps.innerHTML = '';
+    return;
+  }
+  const v = BigInt(rawIn);
+  const r = complementTriple(v, W);
+  if (r.err) { err.textContent = '✗ ' + r.err; out.innerHTML = ''; hint.textContent = ''; steps.innerHTML = ''; return; }
+  err.textContent = '';
+  out.innerHTML =
+    resCard('原码（符号位 + 绝对值）', r.yuan === null ? '—— 不可表示 ——' : r.yuan) +
+    resCard('反码（负数：按位取反）', r.fan === null ? '—— 不可表示 ——' : r.fan) +
+    resCard('补码（负数：反码 + 1）', r.bu);
+  const buHex = '0x' + bigToBase(BigInt('0b' + r.bu), 16).padStart(W / 4, '0').toUpperCase();
+  const tips = [];
+  if (r.note) tips.push(r.note);
+  if (v >= 0n) tips.push('非负数：原码 = 反码 = 补码');
+  tips.push('补码十六进制：' + buHex);
+  tips.push(W + ' 位补码可表示：−2^' + (W - 1) + ' ~ 2^' + (W - 1) + ' − 1');
+  hint.textContent = tips.join('　｜　');
+  steps.innerHTML = compStepsHTML(v, r, W);
+}
+function compStepsHTML(v, r, W) {
+  if (v >= 0n) return '';
+  if (r.yuan === null) {
+    return stepsBox('特例说明', [
+      '−2^' + (W - 1) + ' 没有对应的原码／反码：' + W + ' 位原码最小只能表示 −(2^' + (W - 1) + ' − 1)',
+      '补码直接算：2^' + W + ' − 2^' + (W - 1) + ' = ' + r.bu + '，即符号位 1、其余全 0'
+    ], '');
+  }
+  const magDec = bigToBase(-v, 10);
+  const magBits = bigToBase(-v, 2).padStart(W - 1, '0');
+  const lines = [
+    '十进制 ' + v.toString(10) + '：取绝对值 ' + magDec + '，用 ' + (W - 1) + ' 位有效位写成 ' + magBits,
+    '原码 = 符号位 1 ＋ 绝对值 = ' + r.yuan,
+    '反码 = 符号位不变，有效位逐位取反 = ' + r.fan,
+    '补码 = 反码 + 1 = ' + r.bu,
+    '验算：把补码 ' + r.bu + ' 按有符号读回去 = ' + interpretBits(BigInt('0b' + r.bu), W).signed.toString(10),
+  ];
+  return stepsBox('推导过程', lines, '');
+}
+
+function renderComp2() {
+  const W = parseInt($('t2_w').value, 10);
+  const form = parseInt($('t2_form').value, 10);
+  const err = $('t2_err'), out = $('t2_out');
+  let raw = $('t2_in').value.trim().toLowerCase();
+  if (form === 16 && raw.startsWith('0x')) raw = raw.slice(2);
+  raw = raw.replace(/[\s_,，']/g, '');
+  if (raw.length > 4096) { err.textContent = '✗ 输入过长（上限 4096 字符）'; out.innerHTML = ''; return; }
+  if (!isValidDigits(raw, form)) { err.textContent = '✗ 含 ' + form + ' 进制不支持的字符'; out.innerHTML = ''; return; }
+  const u = parseDigits(raw, form);
+  const r = interpretBits(u, W);
+  if (r.err) { err.textContent = '✗ ' + r.err; out.innerHTML = ''; return; }
+  err.textContent = '';
+  const bin = bigToBase(u, 2).padStart(W, '0');
+  out.innerHTML =
+    resCard('无符号解读', u.toString(10)) +
+    resCard('补码（有符号）解读', r.signed.toString(10)) +
+    resCard('比特位（' + W + ' 位）', groupBinary(bin, 4).grouped);
+}
+
+function fmtStored(x) {
+  return Object.is(x, -0) ? '-0' : String(x);
+}
+function overlayBits(bits, eLen) {
+  const s = esc(bits.slice(0, 1));
+  const e = esc(bits.slice(1, 1 + eLen));
+  const m = esc(bits.slice(1 + eLen));
+  return '<span class="os">' + s + '</span><span class="oe">' + e + '</span><span class="om">' + m + '</span>';
+}
+function floatHTML(d, kind) {
+  const bias = kind === 32 ? 127 : 1023;
+  let comp = '';
+  if (d.cls === '规格化数') comp = esc('(−1)^' + d.s + ' × 1.' + d.mBits + '₂ × 2^(' + d.e + ' − ' + bias + ') ≈ ' + fmtStored(d.stored));
+  else if (d.cls.indexOf('非规格化') === 0) comp = esc('(−1)^' + d.s + ' × 0.' + d.mBits + '₂ × 2^' + d.expVal + ' ≈ ' + fmtStored(d.stored));
+  const rows = [
+    ['字段叠加（红＝符号 · 黄＝指数 · 青＝尾数）', overlayBits(String(d.s) + d.eBits + d.mBits, kind === 32 ? 8 : 11)],
+    ['十六进制', esc(d.hex)],
+    ['符号位 s', esc(String(d.s))],
+    ['指数字段 e（' + (kind === 32 ? 8 : 11) + ' 位）', esc(d.eBits + '（十进制 ' + d.e + '）')],
+    ['尾数域 m（' + (kind === 32 ? 23 : 52) + ' 位）', esc(d.mBits)],
+    ['类型', esc(d.cls)],
+  ];
+  if (comp) rows.push(['值的构成', comp]);
+  if (kind === 32 && d.cls !== 'NaN') rows.push(['float32 实存值（对比输入看舍入）', esc(fmtStored(d.stored))]);
+  let h = '<table>';
+  for (const r of rows) h += '<tr><th style="width:170px">' + r[0] + '</th><td class="mono">' + r[1] + '</td></tr>';
+  return h + '</table>';
+}
+// ===== 面板：浮点 =====
+function renderFloat() {
+  const raw = $('f_in').value.trim();
+  const x = Number(raw);
+  const err = $('f_err');
+  if (raw === '') {
+    err.textContent = '';
+    $('f32out').innerHTML = '<div class="hint">（填个数就开始拆解——如 0.1、-12.75、1e6）</div>';
+    $('f64out').innerHTML = '';
+    return;
+  }
+  if (Number.isNaN(x)) {
+    err.textContent = '✗ 请输入合法十进制数（如 0.1、-12.75、1e6）';
+    $('f32out').innerHTML = ''; $('f64out').innerHTML = '';
+    return;
+  }
+  err.textContent = '';
+  $('f32out').innerHTML = floatHTML(decomposeFloat32(x), 32);
+  $('f64out').innerHTML = floatHTML(decomposeFloat64(x), 64);
+}
+function renderFloat2() {
+  let raw = $('f2_in').value.trim().toLowerCase();
+  const err = $('f2_err'), out = $('f2_out');
+  if (raw.startsWith('0x')) raw = raw.slice(2);
+  raw = raw.replace(/\s+/g, '');
+  if (!/^[0-9a-f]+$/.test(raw)) { err.textContent = '✗ 请输入十六进制比特：8 位＝单精度，16 位＝双精度'; out.innerHTML = ''; return; }
+  err.textContent = '';
+  if (raw.length === 8) {
+    const dv = new DataView(new ArrayBuffer(4));
+    dv.setUint32(0, parseInt(raw, 16));
+    const x = dv.getFloat32(0);
+    out.innerHTML = resCard('按单精度解读', fmtStored(x)) + floatHTML(decomposeFloat32(x), 32);
+  } else if (raw.length === 16) {
+    const dv = new DataView(new ArrayBuffer(8));
+    dv.setBigUint64(0, BigInt('0x' + raw));
+    const x = dv.getFloat64(0);
+    out.innerHTML = resCard('按双精度解读', fmtStored(x)) + floatHTML(decomposeFloat64(x), 64);
+  } else {
+    err.textContent = '✗ 需要 8 位（单精度）或 16 位（双精度）十六进制数字，当前 ' + raw.length + ' 位';
+    out.innerHTML = '';
+  }
+}
+
+// ===== 面板：字符 =====
+function renderChar() {
+  const s = $('s_in').value;
+  const err = $('s_err'), out = $('s_out');
+  err.textContent = '';
+  if (s === '') {
+    out.innerHTML = '<div class="hint">（输入文本查看码点与编码——默认示例含英文、中文与 emoji）</div>';
+    return;
+  }
+  const cps = [...s];
+  const rows = [];
+  for (const ch of cps) {
+    if (rows.length >= 64) { err.textContent = '仅显示前 64 个字符'; break; }
+    const cp = ch.codePointAt(0);
+    const lone = cp >= 0xD800 && cp <= 0xDFFF;
+    const bytes = lone ? '——' : utf8Encode(cp).map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+    const tag = lone ? '孤立代理项（非法码位）'
+      : cp < 128
+        ? (cp >= 32 && cp < 127 ? 'ASCII 可打印' : 'ASCII 控制字符')
+        : (cp < 0x800 ? '拉丁／符号区' : cp < 0x10000 ? '基本平面' : '增补平面');
+    rows.push([ch === ' ' ? '␣' : ch, 'U+' + cp.toString(16).toUpperCase().padStart(4, '0'), cp, cp < 0x10000 ? 1 : 2, bytes, tag]);
+  }
+  const units = cps.reduce((a, ch) => a + (ch.codePointAt(0) < 0x10000 ? 1 : 2), 0);
+  let h = '<table><tr><th>字符</th><th>码点</th><th>十进制</th><th>UTF-16 单元</th><th>UTF-8 字节</th><th>备注</th></tr>';
+  for (const r of rows) {
+    h += '<tr><td class="mono">' + esc(r[0]) + '</td><td class="mono">' + r[1] + '</td><td class="mono">' + r[2] + '</td><td class="mono">' + r[3] + '</td><td class="mono">' + r[4] + '</td><td>' + r[5] + '</td></tr>';
+  }
+  out.innerHTML = (rows.length ? h + '</table>' : '') +
+    '<div class="hint">共 ' + cps.length + ' 个码点 · ' + units + ' 个 UTF-16 单元' +
+    (units !== cps.length ? '（含增补平面字符：1 个字符占 2 个单元——这就是字符串 .length 会「虚高」的原因）' : '') + '</div>';
+}
+
+function bytesFromHex(raw, err, out) {
+  const parts = raw.split(/[\s,]+/).filter(Boolean);
+  const bytes = [];
+  for (const p of parts) {
+    if (!/^[0-9a-fA-F]{1,2}$/.test(p)) { err.textContent = '✗ 「' + p + '」不是 1~2 位十六进制'; out.innerHTML = ''; return null; }
+    bytes.push(parseInt(p, 16));
+  }
+  err.textContent = '';
+  return bytes;
+}
+// 解码容错：先严格模式，不合法字节给明确警示而非静默替字
+function decodeBytes(bytes, label, labelUpper) {
+  try { return { text: new TextDecoder(label, { fatal: true }).decode(new Uint8Array(bytes)) }; }
+  catch (e1) {
+    try {
+      return { text: new TextDecoder(label).decode(new Uint8Array(bytes)), warn: '（字节序列不是合法 ' + labelUpper + '，不合法处已用替代符 � 显示）' };
+    } catch (e2) { return { err: '本浏览器不支持 ' + labelUpper + ' 解码' }; }
+  }
+}
+function renderDecode() {
+  const err = $('s2_err'), out = $('s2_out');
+  const bytes = bytesFromHex($('s2_in').value.trim(), err, out);
+  if (!bytes) return;
+  const enc = $('s2_enc').value;
+  const label = enc === 'gbk' ? 'GBK' : 'UTF-8';
+  const r = decodeBytes(bytes, enc, label);
+  if (r.err) { out.innerHTML = '<div class="hint">' + esc(r.err) + '</div>'; return; }
+  out.innerHTML = '<div class="k">' + label + ' 解码结果</div><div class="v">' + esc(r.text || '（空）') + '</div>' +
+    (r.warn ? '<div class="hint">' + esc(r.warn) + '</div>' : '') +
+    '<div class="foot"><button class="copy">复制</button></div>';
+}
+
+// ---------- 网络面板 ----------
+function netOverlayBits(bits32, prefix) {
+  let h = '';
+  for (let i = 0; i < 32; i++) {
+    h += i < prefix ? '<span class="oe">' + bits32[i] + '</span>' : '<span class="om">' + bits32[i] + '</span>';
+    if (i % 8 === 7 && i < 31) h += '.';
+  }
+  return h;
+}
+function dotted(oct) {
+  return oct[0] + '.' + oct[1] + '.' + oct[2] + '.' + oct[3];
+}
+function renderNet() {
+  const err = $('n_err'), out = $('n_out'), steps = $('n_steps');
+  const pip = parseIPv4($('n_ip').value);
+  if (pip.err) { err.textContent = '✗ IP：' + pip.err; out.innerHTML = ''; steps.innerHTML = ''; return; }
+  const pm = parseMask($('n_mask').value);
+  if (pm.err) { err.textContent = '✗ 掩码：' + pm.err; out.innerHTML = ''; steps.innerHTML = ''; return; }
+  err.textContent = '';
+  const prefix = pm.prefix;
+  const r = subnetCalc(pip.octets, prefix);
+  const maskOct = prefixToMask(prefix);
+  const wild = bigIntToIp(~r.maskN & 0xFFFFFFFFn);
+  const toBits = (oct) => oct.map(o => o.toString(2).padStart(8, '0')).join('');
+  const rows = [
+    ['IP（二进制）', netOverlayBits(toBits(pip.octets), prefix)],
+    ['子网掩码', esc(dotted(maskOct)) + '　＝　' + netOverlayBits(toBits(maskOct), prefix)],
+    ['通配符掩码', esc(dotted(wild))],
+    ['CIDR 记法', esc(dotted(pip.octets) + '/' + prefix)],
+    ['网络地址（黄＝网络位）', esc(dotted(bigIntToIp(r.net))) + '　＝　' + netOverlayBits(toBits(bigIntToIp(r.net)), prefix)],
+    ['广播地址', esc(dotted(bigIntToIp(r.bc)))],
+    ['可用主机范围', esc(dotted(bigIntToIp(r.first)) + ' ~ ' + dotted(bigIntToIp(r.last)))],
+    ['可用主机数', esc(dispThousands(r.usable.toString(10)))],
+    ['地址总数', esc(dispThousands(r.total.toString(10)))],
+    ['传统分类', esc(r.cls)],
+    ['性质', esc(r.priv)],
+  ];
+  let h = '<table>';
+  for (const rw of rows) h += '<tr><th style="width:140px">' + rw[0] + '</th><td class="mono">' + rw[1] + '</td></tr>';
+  out.innerHTML = h + '</table>';
+  const bin = (oct) => oct.map(o => o.toString(2).padStart(8, '0')).join('.');
+  const lines = [
+    bin(pip.octets) + '　← IP',
+    bin(maskOct) + '　← 掩码',
+    bin(bigIntToIp(r.net)) + '　← AND ＝ 网络地址（按位与，遇 0 得 0）',
+    '主机位 ' + r.hostBits + ' 位 → 地址总数 2^' + r.hostBits +
+      (r.hostBits >= 2 ? ' − 2（去掉网络地址与广播地址）＝ ' + dispThousands(r.usable.toString(10)) + ' 台主机' : ''),
+  ];
+  if (prefix === 31) lines.push('/31 是 RFC 3021 点对点特例：两个地址全可用，不设网络／广播地址');
+  if (prefix === 32) lines.push('/32 是单机路由：就这一个地址本身');
+  steps.innerHTML = stepsBox('网络地址推导', lines, '');
+}
+function renderNetHosts() {
+  const out = $('n_hostout');
+  const raw = $('n_hosts').value.trim();
+  if (!/^\d+$/.test(raw)) { out.textContent = ''; return; }
+  const r = hostsToPrefix(BigInt(raw));
+  if (r.err) { out.textContent = '✗ ' + r.err; return; }
+  out.innerHTML = '→ 需要 <b>/' + r.prefix + '</b>（掩码 ' + esc(dotted(prefixToMask(r.prefix))) +
+    '，主机位 ' + r.hostBits + ' 位，可用 ' + esc(dispThousands(r.usable.toString(10))) + ' 台' +
+    (raw === '1' || raw === '2' ? '；若用 /31、/32 特例另有解' : '') + '）';
+}
+
+// ---------- 出题官＋错题本 ----------
+let q1State = null, q1Streak = 0, q2State = null, q2Streak = 0;
+let lsBroken = false;
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { lsBroken = true; } }
+function wrongLoad(kind) {
+  try { const a = JSON.parse(lsGet('shuyi-wrong-' + kind) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+function wrongSave(kind, arr) { lsSet('shuyi-wrong-' + kind, JSON.stringify(arr.slice(0, 50))); }
+function wrongAdd(kind, item, keyOf) {
+  const a = wrongLoad(kind);
+  const key = keyOf(item);
+  const at = a.findIndex((x) => keyOf(x) === key);
+  if (at >= 0) a.splice(at, 1);
+  a.unshift(item);
+  wrongSave(kind, a);
+  renderWrong(kind);
+}
+function statsLoad(kind) {
+  try {
+    const s = JSON.parse(lsGet('shuyi-stats-' + kind));
+    return (s && typeof s.a === 'number' && typeof s.r === 'number') ? s : { a: 0, r: 0 };
+  } catch (e) { return { a: 0, r: 0 }; }
+}
+function statsSave(kind, s) { lsSet('shuyi-stats-' + kind, JSON.stringify(s)); }
+function fmtTime(t) {
+  const d = new Date(t);
+  const p = (n) => String(n).padStart(2, '0');
+  return p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function renderQuizMeta(kind) {
+  const el = $(kind === 'subnet' ? 'q1_streak' : 'q2_streak');
+  const s = statsLoad(kind);
+  const st = kind === 'subnet' ? q1Streak : q2Streak;
+  el.textContent = (st > 0 ? '🔥 连对 ' + st + ' 题 · ' : '') + accText(s.a, s.r);
+}
+function renderWrong(kind) {
+  const arr = wrongLoad(kind);
+  const box = $(kind === 'subnet' ? 'q1_wrong' : 'q2_wrong');
+  const det = box.closest('details');
+  if (det) det.querySelector('summary').textContent = '📕 错题本（' + arr.length + ' 道）';
+  if (!arr.length) {
+    box.innerHTML = '<div class="hint">空——答错的题会自动记到这里（本机最多存 50 道），重练答对即销账。</div>';
+    return;
+  }
+  let h = '';
+  arr.forEach((it, idx) => {
+    const isSub = kind === 'subnet';
+    const title = isSub
+      ? dotted(it.ip) + ' /' + it.prefix
+      : formatNumberInBase(rationalParts(BigInt(it.qnum !== undefined ? it.qnum : it.value), BigInt(it.qden !== undefined ? it.qden : 1)), it.srcBase, 12).text + '（' + it.srcBase + ' 进制）→ ' + it.tgtBase + ' 进制';
+    let correct;
+    if (isSub) {
+      const c = subnetCalc(it.ip, it.prefix);
+      correct = dotted(bigIntToIp(c.net)) + '／' + dotted(bigIntToIp(c.bc)) + '／' + dispThousands(c.usable.toString(10)) + ' 台';
+    } else {
+      correct = formatNumberInBase(rationalParts(BigInt(it.qnum !== undefined ? it.qnum : it.value), BigInt(it.qden !== undefined ? it.qden : 1)), it.tgtBase, 12).text;
+    }
+    h += '<div class="res" style="margin-bottom:8px"><div class="k">' + esc(fmtTime(it.t) + '｜' + title) + '</div>' +
+      '<div class="v">你的：' + esc(it.your) + '</div>' +
+      '<div class="k">正确：' + esc(correct) + '</div>' +
+      '<div class="foot"><button data-wk="' + kind + '" data-act="reask" data-idx="' + idx + '">再练这道</button>' +
+      '<button data-wk="' + kind + '" data-act="remove" data-idx="' + idx + '">移除</button></div></div>';
+  });
+  h += '<div class="row"><button class="pill" data-wk="' + kind + '" data-act="clear">清空错题本</button></div>';
+  if (lsBroken) h += '<div class="hint">⚠ 本机存储不可用（隐私模式或配额受限？）——错题与战绩仅本次会话有效</div>';
+  box.innerHTML = h;
+}
+function q1New() {
+  const g = genQuestion($('q1_level').value, null, $('q1_pmin').value, $('q1_pmax').value);
+  q1State = { ip: g.ip, prefix: g.prefix, calc: subnetCalc(g.ip, g.prefix) };
+  window.__quiz1 = q1State;
+  const maskForm = Math.random() < 0.5 ? '/' + g.prefix : dotted(prefixToMask(g.prefix));
+  $('q1_q').innerHTML = '<div class="k">题目（求网络地址／广播地址／可用主机数）</div><div class="v">' +
+    esc(dotted(g.ip) + '　掩码 ' + maskForm) + '</div>';
+  $('q1_net').value = ''; $('q1_bc').value = ''; $('q1_usable').value = '';
+  $('q1_err').textContent = ''; $('q1_out').innerHTML = '';
+  renderQuizMeta('subnet');
+  $('q1_net').focus();
+}
+function q1AnswerRows(netOk, bcOk, usOk) {
+  const c = q1State.calc;
+  return '<table>' +
+    '<tr><th style="width:110px">网络地址</th><td class="mono">' + (netOk ? '✓ ' : '✗ 应为 ') + dotted(bigIntToIp(c.net)) + '</td></tr>' +
+    '<tr><th>广播地址</th><td class="mono">' + (bcOk ? '✓ ' : '✗ 应为 ') + dotted(bigIntToIp(c.bc)) + '</td></tr>' +
+    '<tr><th>可用主机数</th><td class="mono">' + (usOk ? '✓ ' : '✗ 应为 ') + dispThousands(c.usable.toString(10)) + '</td></tr>' +
+    '</table>';
+}
+function q1Check() {
+  if (!q1State) { $('q1_err').textContent = '先点「🎲 出一题」'; return; }
+  $('q1_err').textContent = '';
+  const net = checkQuizIp($('q1_net').value, bigIntToIp(q1State.calc.net));
+  const bc = checkQuizIp($('q1_bc').value, bigIntToIp(q1State.calc.bc));
+  const us = stripNum($('q1_usable').value);
+  const usOk = /^\d+$/.test(us) && BigInt(us) === q1State.calc.usable;
+  const allOk = net.ok && bc.ok && usOk;
+  const stats = statsLoad('subnet');
+  stats.a++;
+  q1Streak = allOk ? q1Streak + 1 : 0;
+  if (allOk) {
+    stats.r++;
+  } else {
+    wrongAdd('subnet', {
+      t: Date.now(), ip: q1State.ip, prefix: q1State.prefix,
+      your: stripNum($('q1_net').value) + '／' + stripNum($('q1_bc').value) + '／' + stripNum($('q1_usable').value)
+    }, (x) => x.ip.join('.') + '/' + x.prefix);
+  }
+  statsSave('subnet', stats);
+  renderQuizMeta('subnet');
+  const miss = (net.ok ? '' : '网络地址、') + (bc.ok ? '' : '广播地址、') + (usOk ? '' : '可用主机数、');
+  const verdict = allOk ? 'verdict-ok' : 'verdict-no';
+  $('q1_out').innerHTML = '<div class="res ' + verdict + '" style="margin-bottom:8px"><div class="k">判定</div><div class="v">' +
+    (allOk ? '✅ 全对！' : '❌ ' + miss.replace(/、$/, '') + '不对') + '</div></div>' + q1AnswerRows(net.ok, bc.ok, usOk);
+}
+function q1Reveal() {
+  if (!q1State) { $('q1_err').textContent = '先点「🎲 出一题」'; return; }
+  $('q1_err').textContent = '';
+  q1Streak = 0; renderQuizMeta('subnet');
+  const c = q1State.calc;
+  const bin = (o) => o.map(x => x.toString(2).padStart(8, '0')).join('.');
+  $('q1_out').innerHTML = stepsBox('解析（看了清连对）', [
+    bin(q1State.ip) + '　← IP',
+    bin(prefixToMask(q1State.prefix)) + '　← 掩码',
+    bin(bigIntToIp(c.net)) + '　← AND ＝ 网络地址',
+    '主机位 ' + c.hostBits + ' 位 → 可用 ' + dispThousands(c.usable.toString(10)) + ' 台'
+  ], '', false, q1AnswerRows(false, false, false));
+}
+function q2New() {
+  const g = genConvQuestion($('q2_level').value, $('q2_kind').value);
+  q2State = { srcBase: g.srcBase, tgtBase: g.tgtBase, QNum: g.QNum, QDen: g.QDen };
+  window.__quiz2 = q2State;
+  const disp = formatNumberInBase(rationalParts(g.QNum, g.QDen), g.srcBase, 12).text;
+  $('q2_q').innerHTML = '<div class="k">题目</div><div class="v">' +
+    esc(disp + '（' + g.srcBase + ' 进制）→ ' + g.tgtBase + ' 进制') + '</div>';
+  $('q2_ans').value = '';
+  $('q2_ans').placeholder = '输入 ' + g.tgtBase + ' 进制答案' + (g.QDen > 1n ? '（可带小数）' : '');
+  $('q2_err').textContent = ''; $('q2_out').innerHTML = '';
+  renderQuizMeta('conv');
+  $('q2_ans').focus();
+}
+function q2Check() {
+  if (!q2State) { $('q2_err').textContent = '先点「🎲 出一题」'; return; }
+  $('q2_err').textContent = '';
+  const r = checkQuizValue($('q2_ans').value, q2State.tgtBase, q2State.QNum, q2State.QDen);
+  const stats = statsLoad('conv');
+  stats.a++;
+  q2Streak = r.ok ? q2Streak + 1 : 0;
+  if (r.ok) {
+    stats.r++;
+  } else {
+    wrongAdd('conv', {
+      t: Date.now(), srcBase: q2State.srcBase, tgtBase: q2State.tgtBase,
+      qnum: q2State.QNum.toString(), qden: q2State.QDen.toString(), your: $('q2_ans').value.trim()
+    }, (x) => x.qnum + '/' + x.qden + ':' + x.srcBase + '>' + x.tgtBase);
+  }
+  statsSave('conv', stats);
+  renderQuizMeta('conv');
+  const correct = formatNumberInBase(rationalParts(q2State.QNum, q2State.QDen), q2State.tgtBase, 12).text;
+  const verdict = r.ok ? 'verdict-ok' : 'verdict-no';
+  $('q2_out').innerHTML = '<div class="res ' + verdict + '"><div class="k">判定</div><div class="v">' +
+    (r.ok ? '✅ 全对！' : '❌ ' + (r.msg ? r.msg + '｜正确答案：' : '不对——正确答案：') + correct) + '</div></div>';
+}
+function q2Reveal() {
+  if (!q2State) { $('q2_err').textContent = '先点「🎲 出一题」'; return; }
+  $('q2_err').textContent = '';
+  q2Streak = 0; renderQuizMeta('conv');
+  $('q2_out').innerHTML = stepsBox('解析（看了清连对）', [
+    '答案：' + formatNumberInBase(rationalParts(q2State.QNum, q2State.QDen), q2State.tgtBase, 12).text + '（' + q2State.tgtBase + ' 进制）'
+  ], '同款步骤可在上方「换算步骤」区复现——把数值输进去、目标进制选好即可');
+}
+[['q1_new', q1New], ['q1_check', q1Check], ['q1_reveal', q1Reveal], ['q2_new', q2New], ['q2_check', q2Check], ['q2_reveal', q2Reveal]]
+  .forEach(([id, fn]) => $(id).addEventListener('click', fn));
+$('q1_level').addEventListener('change', () => {
+  $('q1_custombox').style.display = $('q1_level').value === 'custom' ? '' : 'none';
+});
+[['q1_net'], ['q1_bc'], ['q1_usable']].forEach(([id]) =>
+  $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) q1Check(); }));
+$('q2_ans').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) q2Check(); });
+['q1_wrong', 'q2_wrong'].forEach((id) => {
+  $(id).addEventListener('click', (ev) => {
+    const b = ev.target.closest ? ev.target.closest('button') : null;
+    if (!b || !b.dataset.act) return;
+    const kind = b.dataset.wk;
+    if (b.dataset.act === 'clear') {
+      if (b.dataset.armed) { wrongSave(kind, []); renderWrong(kind); }
+      else { b.dataset.armed = '1'; b.textContent = '确认清空？（再点一次）'; }
+      return;
+    }
+    const arr = wrongLoad(kind);
+    const idx = parseInt(b.dataset.idx, 10);
+    if (b.dataset.act === 'remove') { arr.splice(idx, 1); wrongSave(kind, arr); renderWrong(kind); return; }
+    if (b.dataset.act === 'reask') {
+      const it = arr[idx];
+      if (!it) return;
+      arr.splice(idx, 1);
+      wrongSave(kind, arr);
+      renderWrong(kind);
+      if (kind === 'subnet') {
+        q1State = { ip: it.ip, prefix: it.prefix, calc: subnetCalc(it.ip, it.prefix), reaskIdx: idx };
+        window.__quiz1 = q1State;
+        $('q1_q').innerHTML = '<div class="k">题目（错题重练——答对自动销账）</div><div class="v">' +
+          esc(dotted(it.ip) + '　掩码 /' + it.prefix) + '</div>';
+        $('q1_net').value = ''; $('q1_bc').value = ''; $('q1_usable').value = '';
+        $('q1_err').textContent = ''; $('q1_out').innerHTML = '';
+        scrollToPanel('p-net');
+      } else {
+        q2State = { srcBase: it.srcBase, tgtBase: it.tgtBase, value: BigInt(it.value), reaskIdx: idx };
+        window.__quiz2 = q2State;
+        $('q2_q').innerHTML = '<div class="k">题目（错题重练——答对自动销账）</div><div class="v">' +
+          esc(bigToBase(q2State.value, it.srcBase) + '（' + it.srcBase + ' 进制）→ ' + it.tgtBase + ' 进制') + '</div>';
+        $('q2_ans').value = '';
+        $('q2_err').textContent = ''; $('q2_out').innerHTML = '';
+        scrollToPanel('p-conv');
+      }
+    }
+  });
+});
+renderQuizMeta('subnet'); renderQuizMeta('conv');
+renderWrong('subnet'); renderWrong('conv');
+
+const wire = (ids, fn) => ids.forEach(id => {
+  const el = $(id);
+  if (!el) return;
+  el.addEventListener('input', fn);
+  el.addEventListener('change', fn);
+});
+wire(['c_in', 'c_src', 'c_prec', 'c_steps', 'c_tgt'], renderConv);
+wire(['b_base', 'b_a', 'b_b', 'b_w', 'b_k'], renderBits);
+wire(['t_w', 't_in'], renderComp);
+wire(['t2_in', 't2_form', 't2_w'], renderComp2);
+wire(['f_in'], renderFloat);
+wire(['f2_in'], renderFloat2);
+wire(['s_in'], renderChar);
+wire(['s2_in', 's2_enc'], renderDecode);
+wire(['n_ip', 'n_mask'], renderNet);
+wire(['n_hosts'], renderNetHosts);
+renderConv(); renderBits(); renderComp(); renderComp2(); renderFloat(); renderFloat2(); renderChar(); renderDecode(); renderNet(); renderNetHosts();
+activatePanel(PANEL_NAMES[location.hash.slice(1)] ? location.hash.slice(1) : 'conv', false);
+$('c_in').focus();
+</script>
+</body>
+</html>
